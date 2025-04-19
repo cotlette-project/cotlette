@@ -55,7 +55,7 @@ class Model(metaclass=ModelMeta):
         """
         if name in self.__dict__:
             return self.__dict__[name]
-        raise AttributeError(f"'{cls.get_table_name()}' object has no attribute '{name}'")
+        raise AttributeError(f"'{self.get_table_name()}' object has no attribute '{name}'")
 
     def __setattr__(self, name, value):
         """
@@ -64,7 +64,7 @@ class Model(metaclass=ModelMeta):
         self.__dict__[name] = value
     
     def __str__(self):
-        return "<%s object (%s)>" % (cls.get_table_name(), self.id)
+        return "<%s object (%s)>" % (self.get_table_name(), self.id)
 
     def to_dict(self, exclude_private=True):
         """
@@ -157,7 +157,6 @@ class Model(metaclass=ModelMeta):
             placeholders = ', '.join(['?'] * len(data))
             values = tuple(data[key] for key in data if key != 'id')
 
-            print('self.get_table_name()', self.get_table_name())
             insert_query = f"INSERT INTO {self.get_table_name()} ({fields}) VALUES ({placeholders})"
             db.execute(insert_query, values)
             db.commit()

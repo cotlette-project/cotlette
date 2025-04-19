@@ -29,7 +29,8 @@ router = APIRouter()
 def create_tables():
     GroupModel.create_table()
     if not GroupModel.objects.filter(name="Owners").first():  # FIXME
-        GroupModel.objects.create(name="Owners")
+        test_group = GroupModel.objects.create(name="Owners")
+        print('test_group', test_group)
 
 # # Pydantic-модель для входа пользователя
 # class UserLogin(BaseModel):

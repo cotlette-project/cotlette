@@ -22,11 +22,6 @@ class Manager:
         """
         Получает одну запись из базы данных по заданным параметрам.
         :param kwargs: Параметры для фильтрации.
-        :return: Экземпляр модели.
-        :raises DoesNotExist: Если запись не найдена.
+        :return: Экземпляр модели или None.
         """
-        queryset = QuerySet(self.model_class).filter(**kwargs)
-        result = queryset.first()
-        if result is None:
-            raise ValueError(f"{self.model_class.__name__} matching query does not exist.")
-        return result
+        return QuerySet(self.model_class).filter(**kwargs).first()
