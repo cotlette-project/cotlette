@@ -95,7 +95,7 @@ class QuerySet:
         cursor = db.execute(insert_query, values)
         db.commit()
 
-        if not hasattr(cursor, 'lastrowid') or cursor.lastrowid is None:
+        if cursor.lastrowid is None:
             raise RuntimeError("Failed to retrieve the ID of the newly created record.")
         return self.model_class.objects.get(id=cursor.lastrowid)
 

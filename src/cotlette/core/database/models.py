@@ -3,6 +3,8 @@ from cotlette.core.database.manager import Manager
 from cotlette.core.database.backends.sqlite3 import db
 from cotlette.core.database.fields.related import ForeignKeyField
 
+from cotlette.core.database.fields import AutoField
+
 
 class ModelMeta(type):
     _registry = {}  # Словарь для хранения зарегистрированных моделей
@@ -77,7 +79,6 @@ class Model(metaclass=ModelMeta):
 
     @classmethod
     def create_table(cls):
-        
         # Определяем имя таблицы
         if hasattr(cls, "table") and cls.table:
             table_name = cls.table  # Используем явное имя таблицы
@@ -89,15 +90,22 @@ class Model(metaclass=ModelMeta):
             else:
                 raise ValueError(f"Invalid module path for model '{cls.__name__}': {cls.__module__}")
             table_name = f"{app_name}_{cls.__name__.lower()}"
-        
+
         columns = []
         foreign_keys = []
 
         for field_name, field in cls._fields.items():
             # Формируем определение столбца
             column_def = f'"{field_name}" {field.column_type}'
+            
+            # Добавляем автоинкремент для первичного ключа
             if field.primary_key:
-                column_def += " PRIMARY KEY"
+                if isinstance(field, AutoField):  # Проверяем, является ли поле автоинкрементным
+                    column_def += " PRIMARY KEY AUTOINCREMENT"  # Для SQLite
+                    # Если используется PostgreSQL, замените на "SERIAL PRIMARY KEY"
+                else:
+                    column_def += " PRIMARY KEY"
+            
             if field.unique:
                 column_def += " UNIQUE"
             columns.append(column_def)
