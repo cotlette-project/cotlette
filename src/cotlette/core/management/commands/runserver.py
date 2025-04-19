@@ -146,24 +146,26 @@ class Command(BaseCommand):
         #     autoreload.run_with_reloader(self.inner_run, **options)
         # else:
         # self.inner_run(None, **options)
+        try:
+            uvicorn.run(
+                # Путь до приложение
+                'core:app',
 
-        uvicorn.run(
-            # Путь до приложение
-            'core:app',
+                # Адрес и порт
+                host=self.addr or default_addr,
+                port=int(self.port) or default_port,
+                
+                # Авторелоад, при изменении py файлов
+                reload=options["use_reloader"],
+                
+                # Уровень логгирования
+                log_level="debug" if settings.DEBUG else "info",
+                
+                # Логи HTTP-запросов включены
+                access_log=True,
 
-            # Адрес и порт
-            host=self.addr or default_addr,
-            port=int(self.port) or default_port,
-            
-            # Авторелоад, при изменении py файлов
-            reload=options["use_reloader"],
-            
-            # Уровень логгирования
-            log_level="debug" if settings.DEBUG else "info",
-            
-            # Логи HTTP-запросов включены
-            access_log=True,
-
-            # Конфигурация логгера uvicorn
-            log_config=LOGGING_CONFIG,
-        )
+                # Конфигурация логгера uvicorn
+                log_config=LOGGING_CONFIG,
+            )
+        except KeyboardInterrupt:
+            sys.exit(0)
