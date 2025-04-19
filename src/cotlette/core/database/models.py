@@ -87,6 +87,7 @@ class Model(metaclass=ModelMeta):
 
     @classmethod
     def create_table(cls):
+        # TODO сделать чтобы было вынесено в database.backends... в частности для SQLite3 и в будущем PostgreSQL
 
         columns = []
         foreign_keys = []
