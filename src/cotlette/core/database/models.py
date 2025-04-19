@@ -55,7 +55,7 @@ class Model(metaclass=ModelMeta):
         """
         if name in self.__dict__:
             return self.__dict__[name]
-        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+        raise AttributeError(f"'{cls.get_table_name()}' object has no attribute '{name}'")
 
     def __setattr__(self, name, value):
         """
@@ -64,7 +64,7 @@ class Model(metaclass=ModelMeta):
         self.__dict__[name] = value
     
     def __str__(self):
-        return "<%s object (%s)>" % (self.__class__.__name__, self.id)
+        return "<%s object (%s)>" % (cls.get_table_name(), self.id)
 
     def to_dict(self, exclude_private=True):
         """
@@ -78,18 +78,15 @@ class Model(metaclass=ModelMeta):
         }
 
     @classmethod
+    def get_table_name(cls):
+        return (
+            cls.table 
+            if hasattr(cls, "table") and cls.table 
+            else "_".join(cls.__module__.split('.')[1:-1] + [cls.__name__.lower()])
+        )
+
+    @classmethod
     def create_table(cls):
-        # Определяем имя таблицы
-        if hasattr(cls, "table") and cls.table:
-            table_name = cls.table  # Используем явное имя таблицы
-        else:
-            # Генерируем имя таблицы по умолчанию
-            module_path = cls.__module__.split('.')
-            if len(module_path) >= 3 and module_path[1] == "apps":
-                app_name = module_path[2]  # Пример: 'users' или 'groups'
-            else:
-                raise ValueError(f"Invalid module path for model '{cls.__name__}': {cls.__module__}")
-            table_name = f"{app_name}_{cls.__name__.lower()}"
 
         columns = []
         foreign_keys = []
@@ -121,7 +118,7 @@ class Model(metaclass=ModelMeta):
         all_parts = columns + foreign_keys
 
         # Формируем финальный SQL-запрос
-        query = f'CREATE TABLE IF NOT EXISTS "{table_name}" ({", ".join(all_parts)});'
+        query = f'CREATE TABLE IF NOT EXISTS "{cls.get_table_name()}" ({", ".join(all_parts)});'
 
         db.execute(query)  # Выполняем запрос на создание таблицы
         db.commit()        # Фиксируем изменения
@@ -151,7 +148,7 @@ class Model(metaclass=ModelMeta):
             # Обновляем существующую запись (UPDATE)
             fields = ', '.join([f"{key}=?" for key in data if key != 'id'])
             values = tuple(data[key] for key in data if key != 'id') + (self.id,)
-            update_query = f"UPDATE {self.__class__.__name__} SET {fields} WHERE id=?"
+            update_query = f"UPDATE {self.get_table_name()} SET {fields} WHERE id=?"
             db.execute(update_query, values)
             db.commit()
         else:
@@ -160,7 +157,8 @@ class Model(metaclass=ModelMeta):
             placeholders = ', '.join(['?'] * len(data))
             values = tuple(data[key] for key in data if key != 'id')
 
-            insert_query = f"INSERT INTO {self.__class__.__name__} ({fields}) VALUES ({placeholders})"
+            print('self.get_table_name()', self.get_table_name())
+            insert_query = f"INSERT INTO {self.get_table_name()} ({fields}) VALUES ({placeholders})"
             db.execute(insert_query, values)
             db.commit()
 
