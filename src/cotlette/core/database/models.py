@@ -96,12 +96,11 @@ class Model(metaclass=ModelMeta):
             column_def = f'"{field_name}" {field.column_type}'
             
             # Добавляем автоинкремент для первичного ключа
-            if field.primary_key:
-                if isinstance(field, AutoField):  # Проверяем, является ли поле автоинкрементным
-                    column_def += " PRIMARY KEY AUTOINCREMENT"  # Для SQLite
-                    # Если используется PostgreSQL, замените на "SERIAL PRIMARY KEY"
-                else:
-                    column_def += " PRIMARY KEY"
+            if isinstance(field, AutoField):  # Проверяем, является ли поле автоинкрементным
+                column_def += " PRIMARY KEY AUTOINCREMENT"  # Для SQLite
+                # Если используется PostgreSQL, то сделать "SERIAL PRIMARY KEY"
+            elif field.primary_key:
+                column_def += " PRIMARY KEY"
             
             if field.unique:
                 column_def += " UNIQUE"
