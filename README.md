@@ -61,7 +61,8 @@ Cotlette provides a set of commands for convenient project management:
 *   **cotlette startproject \<project\_name>** : Creates a new project structure.
 *   **cotlette startapp \<app\_name>** : Creates a new application within the project.
 *   **cotlette runserver** : Starts the development server.
-*   **cotlette shell** : Launches an interactive console for working with the project.
+*   **cotlette makemigrations** : Creates new migration files based on changes detected in the models.
+*   **cotlette migrate** : Applies migrations to the database, making necessary changes to the database schema.
 
 ## **Usage Examples**
 
