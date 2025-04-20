@@ -116,10 +116,10 @@ def logout():
     return response
 
 
-# Создание таблицы при запуске приложения
-@router.on_event("startup")
-def create_tables():
-    UserModel.create_table()
+# # Создание таблицы при запуске приложения
+# @router.on_event("startup")
+# def create_tables():
+#     UserModel.create_table()
 
 
 from apps.groups.models import GroupModel

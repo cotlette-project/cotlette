@@ -8,33 +8,30 @@ import uvicorn
 
 from cotlette.conf import settings
 from cotlette.core.management.base import BaseCommand, CommandError
-# from cotlette.core.servers.basehttp import WSGIServer, get_internal_wsgi_application, run
-# from cotlette.db import connections
-# from cotlette.utils import autoreload
 from cotlette.utils.regex_helper import _lazy_re_compile
 from cotlette.utils.version import get_docs_version
 
+# Regular expression to validate IP address and port combinations
 naiveip_re = _lazy_re_compile(
     r"""^(?:
 (?P<addr>
-    (?P<ipv4>\d{1,3}(?:\.\d{1,3}){3}) |         # IPv4 address
-    (?P<ipv6>\[[a-fA-F0-9:]+\]) |               # IPv6 address
-    (?P<fqdn>[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*) # FQDN
+    (?P<ipv4>\d{1,3}(?:\.\d{1,3}){3}) |         # IPv4 address (e.g., 127.0.0.1)
+    (?P<ipv6>\[[a-fA-F0-9:]+\]) |               # IPv6 address (e.g., [::1])
+    (?P<fqdn>[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*) # Fully Qualified Domain Name (FQDN)
 ):)?(?P<port>\d+)$""",
     re.X,
 )
 
-
-# Конфигурация логгера
+# Logging configuration for Uvicorn
 LOGGING_CONFIG = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
         "default": {
             "()": "uvicorn.logging.DefaultFormatter",
-            "fmt": "%(levelprefix)s %(asctime)s - %(message)s",
-            "datefmt": "%Y-%m-%d %H:%M:%S",
-            "use_colors": True,
+            "fmt": "%(levelprefix)s %(asctime)s - %(message)s",  # Default log format
+            "datefmt": "%Y-%m-%d %H:%M:%S",  # Timestamp format
+            "use_colors": True,  # Enable colored logs for better readability
         },
         "access": {
             "()": "uvicorn.logging.AccessFormatter",
@@ -47,12 +44,12 @@ LOGGING_CONFIG = {
         "default": {
             "formatter": "default",
             "class": "logging.StreamHandler",
-            "stream": "ext://sys.stdout",
+            "stream": "ext://sys.stdout",  # Log to standard output
         },
         "access": {
             "formatter": "access",
             "class": "logging.StreamHandler",
-            "stream": "ext://sys.stdout",
+            "stream": "ext://sys.stdout",  # Log access logs to standard output
         },
     },
     "loggers": {
@@ -64,108 +61,104 @@ LOGGING_CONFIG = {
 
 
 class Command(BaseCommand):
-    help = "Starts a lightweight web server for development."
+    help = "Starts a lightweight web server for development purposes."
 
     stealth_options = ("shutdown_message",)
     suppressed_base_arguments = {"--verbosity", "--traceback"}
 
-    default_addr = "127.0.0.1"
-    default_addr_ipv6 = "::1"
-    default_port = "8000"
+    default_addr = "127.0.0.1"  # Default IPv4 address
+    default_addr_ipv6 = "::1"  # Default IPv6 address
+    default_port = "8000"  # Default port number
     protocol = "http"
-    # server_cls = WSGIServer
 
     def add_arguments(self, parser):
+        """
+        Define command-line arguments for the runserver command.
+        """
         parser.add_argument(
-            "addrport", nargs="?", help="Optional port number, or ipaddr:port"
+            "addrport", nargs="?", help="Optional port number or ipaddr:port pair."
         )
         parser.add_argument(
             "--ipv6",
             "-6",
             action="store_true",
             dest="use_ipv6",
-            help="Tells Cotlette to use an IPv6 address.",
+            help="Use IPv6 address instead of IPv4.",
         )
         parser.add_argument(
             "--reload",
             action="store_true",
             dest="use_reloader",
-            help="Tells Cotlette to NOT use the auto-reloader.",
+            help="Enable auto-reloading when source files change.",
         )
 
-    # def execute(self, *args, **options):
-    #     if options["no_color"]:
-    #         # We rely on the environment because it's currently the only
-    #         # way to reach WSGIRequestHandler. This seems an acceptable
-    #         # compromise considering `runserver` runs indefinitely.
-    #         os.environ["COTLETTE_COLORS"] = "nocolor"
-    #     super().execute(*args, **options)
-
     def get_check_kwargs(self, options):
-        """Validation is called explicitly each time the server reloads."""
+        """
+        Validation is called explicitly each time the server reloads.
+        """
         return {"tags": set()}
 
     def handle(self, *args, **options):
+        """
+        Main entry point for the command. Validates input and starts the server.
+        """
         if not settings.DEBUG and not settings.ALLOWED_HOSTS:
             raise CommandError("You must set settings.ALLOWED_HOSTS if DEBUG is False.")
 
         self.use_ipv6 = options["use_ipv6"]
         if self.use_ipv6 and not socket.has_ipv6:
-            raise CommandError("Your Python does not support IPv6.")
+            raise CommandError("Your Python installation does not support IPv6.")
+
         self._raw_ipv6 = False
+
+        # Parse the addrport argument if provided
         if not options["addrport"]:
             self.addr = ""
             self.port = self.default_port
         else:
-            m = re.match(naiveip_re, options["addrport"])
-            if m is None:
+            match = re.match(naiveip_re, options["addrport"])
+            if not match:
                 raise CommandError(
-                    '"%s" is not a valid port number '
-                    "or address:port pair." % options["addrport"]
+                    f'"{options["addrport"]}" is not a valid port number or address:port pair.'
                 )
-            self.addr, _ipv4, _ipv6, _fqdn, self.port = m.groups()
+            self.addr, _ipv4, _ipv6, _fqdn, self.port = match.groups()
+
             if not self.port.isdigit():
-                raise CommandError("%r is not a valid port number." % self.port)
+                raise CommandError(f'"{self.port}" is not a valid port number.')
+
             if self.addr:
                 if _ipv6:
+                    # Strip brackets from IPv6 address
                     self.addr = self.addr[1:-1]
                     self.use_ipv6 = True
                     self._raw_ipv6 = True
                 elif self.use_ipv6 and not _fqdn:
-                    raise CommandError('"%s" is not a valid IPv6 address.' % self.addr)
+                    raise CommandError(f'"{self.addr}" is not a valid IPv6 address.')
+
+        # Set default address if none is provided
         if not self.addr:
             self.addr = self.default_addr_ipv6 if self.use_ipv6 else self.default_addr
             self._raw_ipv6 = self.use_ipv6
+
+        # Start the server
         self.run(**options)
 
     def run(self, **options):
-        """Run the server, using the autoreloader if needed."""
+        """
+        Run the Uvicorn server with the specified configuration.
+        """
         use_reloader = options["use_reloader"]
 
-        # if use_reloader:
-        #     autoreload.run_with_reloader(self.inner_run, **options)
-        # else:
-        # self.inner_run(None, **options)
         try:
             uvicorn.run(
-                # Путь до приложение
-                'core:app',
-
-                # Адрес и порт
-                host=self.addr or default_addr,
-                port=int(self.port) or default_port,
-                
-                # Авторелоад, при изменении py файлов
-                reload=options["use_reloader"],
-                
-                # Уровень логгирования
-                log_level="debug" if settings.DEBUG else "info",
-                
-                # Логи HTTP-запросов включены
-                access_log=True,
-
-                # Конфигурация логгера uvicorn
-                log_config=LOGGING_CONFIG,
+                "core:app",  # Path to the ASGI application
+                host=self.addr or self.default_addr,  # Host address
+                port=int(self.port) or int(self.default_port),  # Port number
+                reload=use_reloader,  # Enable auto-reloading
+                log_level="debug" if settings.DEBUG else "info",  # Log level based on DEBUG setting
+                access_log=True,  # Enable HTTP access logs
+                log_config=LOGGING_CONFIG,  # Custom logging configuration
             )
         except KeyboardInterrupt:
+            # Gracefully handle manual server shutdown (Ctrl+C)
             sys.exit(0)

@@ -24,13 +24,11 @@ from jose import JWTError, jwt
 
 router = APIRouter()
 
-# Создание таблицы при запуске приложения
+# # Создание таблицы при запуске приложения
 @router.on_event("startup")
 def create_tables():
-    GroupModel.create_table()
     if not GroupModel.objects.filter(name="Owners").first():  # FIXME
         test_group = GroupModel.objects.create(name="Owners")
-        print('test_group', test_group)
 
 # # Pydantic-модель для входа пользователя
 # class UserLogin(BaseModel):

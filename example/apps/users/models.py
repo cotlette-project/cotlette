@@ -31,8 +31,7 @@ class User(BaseModel):
 class UserModel(Model):
     table = "users_usermodel"
 
-    # id = AutoField(primary_key=True)  # Первичный ключ
-    id = AutoField()
+    id = AutoField(primary_key=True)  # Первичный ключ
     name = CharField(max_length=50)
     age = IntegerField()
     email = CharField(max_length=100)
