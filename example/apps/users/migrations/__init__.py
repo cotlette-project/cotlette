@@ -1,2 +1,6 @@
 
 # Last migration hash: 5acb375cf6ce96d574b383b7e72acfeef690b4ef2c5263d7934e064e91aae86e
+
+# Last migration hash: edc24b2dccd5d5e0973141c2048ab5e3caadbfb9edc96b58f407eb5f87212b3d
+
+# Last migration hash: edc24b2dccd5d5e0973141c2048ab5e3caadbfb9edc96b58f407eb5f87212b3d

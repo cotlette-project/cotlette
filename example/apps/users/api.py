@@ -138,6 +138,7 @@ async def create_user(user: UserCreate):
         group=group.id
     )
     return User(
+        id=new_user.id,
         name=new_user.name,
         age=new_user.age,
         email=new_user.email,

@@ -21,7 +21,7 @@ class User(BaseModel):
     name: str
     age: int
     email: str
-    group: Optional[Group] = None
+    group: Optional[int] = None
     organization: str = "N/A organization"
 
     # class Config:
@@ -31,7 +31,7 @@ class User(BaseModel):
 class UserModel(Model):
     table = "users_usermodel"
 
-    id = AutoField(primary_key=True)  # Первичный ключ
+    id = AutoField(primary_key=True)
     name = CharField(max_length=50)
     age = IntegerField()
     email = CharField(max_length=100)
